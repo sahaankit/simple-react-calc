@@ -8,7 +8,8 @@ You can use the calculator here: <https://react-simple-calculator-gamma.vercel.a
 
 ## To-Do
 
+- [x] Add functionality for operations on negative integers
 - [ ] Add BODMAS rule
-- [ ] Add functionality for operations on negative numbers
+- [ ] Add history
 - [ ] Remove dependency cycles
 - [x] Make a cup of good ol' coffee

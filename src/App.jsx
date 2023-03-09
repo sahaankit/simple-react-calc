@@ -8,6 +8,7 @@ import "./index.css"
 export const ACTIONS = {
   ADD_DIGIT: 'add-digit',
   CLEAR: 'clear',
+  CHANGE_SIGN: 'change-sign',
   DELETE_DIGIT: 'delete-digit',
   CHOOSE_OPERATION: 'choose-operation',
   EVALUATE: 'evaluate'
@@ -27,7 +28,7 @@ function reducer(state, {type, payload}) { //action is divided into two parts, t
         }
       }
 
-      //if a 0 is already present and don't allow pressing another 0
+      //if a 0 is already present, don't allow pressing another 0
       if(payload.digit === "0" && state.currentOperand==="0") {return state}
 
       //if no operand present and . is entered, consider it as 0.XXX...
@@ -37,7 +38,6 @@ function reducer(state, {type, payload}) { //action is divided into two parts, t
           currentOperand: payload.digit
         }
       }
-
       //do not allow repeating decimal point
       if (payload.digit === "." && state.currentOperand.includes(".")) { return state }
 
@@ -51,6 +51,12 @@ function reducer(state, {type, payload}) { //action is divided into two parts, t
     case ACTIONS.CHOOSE_OPERATION:
       //if current and previous operands are null
       if(state.currentOperand==null && state.previousOperand==null) {return state}
+      
+      //if current operand ends with ".", don't do anything
+      if(state.currentOperand!=null && state.currentOperand.endsWith(".")) return state
+
+      //if current operand is ".", do nothing. ("." has no real meaning)
+      if(state.currentOperand===".") return state
 
       //if current operand is null, but previous operand & operation is not
       //and new operation is entered, overwrite operation with new operation
@@ -81,6 +87,25 @@ function reducer(state, {type, payload}) { //action is divided into two parts, t
         currentOperand: null
       }
     
+    //when sign change (+/-) button is clicked
+    case ACTIONS.CHANGE_SIGN:
+      //if current & previous operands are empty, do nothing
+      if(state.currentOperand==null && state.currentOperand==null) return state
+
+      //if current operand is 0, do nothing
+      if(state.currentOperand===0) return state
+
+      //if current operand is ".", do nothing
+      if(state.currentOperand===".") return state
+
+      //if previous operand and operation are not empty, keep current states, and change sign of current operand
+      return {
+        currentOperand: (state.currentOperand*-1).toString(),
+        previousOperand: state.previousOperand,
+        operation: state.operation
+      }
+      
+
     //case where "C" is clicked
     case ACTIONS.CLEAR:
       return {}
@@ -99,7 +124,21 @@ function reducer(state, {type, payload}) { //action is divided into two parts, t
       //if current operand is null, do nothing
       if(state.currentOperand==null) return state
 
+      //if only "-" remains, delete it
+      if(state.currentOperand=="-0" && state.currentOperand.length===2) return {}
+
+      //if current operand has only 1 digit and is negative, set currentOperand to null
+      if(state.currentOperand<0 && state.currentOperand.length===2) return {...state, currentOperand: null}
+
+      //if current operand has more than 1 digit and is negative, slice the number one digit by one from the end
+      if(state.currentOperand<0 && state.currentOperand.length>2) return {
+        ...state,
+        currentOperand: state.currentOperand.slice(0, -1)
+      }
+
+      //if current operand has only 1 digit, set currentOperand to null
       if(state.currentOperand.length===1) return {...state, currentOperand: null}
+
        
       return {
         ...state,
@@ -108,6 +147,8 @@ function reducer(state, {type, payload}) { //action is divided into two parts, t
 
     //case when "=" is clicked
     case ACTIONS.EVALUATE:
+      
+      //if any one of them is null, don't do anything
       if(state.operation == null || state.previousOperand==null || state.currentOperand==null) { return state }
       return {
         ...state,
@@ -116,7 +157,7 @@ function reducer(state, {type, payload}) { //action is divided into two parts, t
         operation: null,
         currentOperand: evaluate(state)
       }
-
+      
   }
 }
 
@@ -165,8 +206,9 @@ function App() {
         <div className="previous-operand">{formatOperand(previousOperand)} {operation}</div>
         <div className="current-operand">{formatOperand(currentOperand)}</div>
       </div>
-      <button className="span-two" onClick={()=>  dispatch({ type: ACTIONS.CLEAR })}>C</button>
+      <button onClick={()=>  dispatch({ type: ACTIONS.CLEAR })}>C</button>
       <button onClick={()=>  dispatch({ type: ACTIONS.DELETE_DIGIT })}>DEL</button>
+      <button onClick={()=>  dispatch({ type: ACTIONS.CHANGE_SIGN })}>+/-</button>
       <OperationButton operation="÷" dispatch={dispatch}/>
       <DigitButton digit="7" dispatch={dispatch}/>
       <DigitButton digit="8" dispatch={dispatch}/>
@@ -175,11 +217,11 @@ function App() {
       <DigitButton digit="4" dispatch={dispatch}/>
       <DigitButton digit="5" dispatch={dispatch}/>
       <DigitButton digit="6" dispatch={dispatch}/>
-      <OperationButton operation="+" dispatch={dispatch}/>
+      <OperationButton operation="-" dispatch={dispatch}/>
       <DigitButton digit="1" dispatch={dispatch}/>
       <DigitButton digit="2" dispatch={dispatch}/>
       <DigitButton digit="3" dispatch={dispatch}/>
-      <OperationButton operation="-" dispatch={dispatch}/>
+      <OperationButton operation="+" dispatch={dispatch}/>
       <DigitButton digit="." dispatch={dispatch}/>
       <DigitButton digit="0" dispatch={dispatch}/>
       <button className="span-two" onClick={()=> dispatch({ type: ACTIONS.EVALUATE })}>=</button>
